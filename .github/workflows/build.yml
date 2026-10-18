@@ -4,8 +4,7 @@ name: Build Kotost Bypass APK
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build:
@@ -14,7 +13,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Unpack Android project
+        run: |
+          unzip -o KotostBypass-Cloud-Build.zip -d project
+          find project -maxdepth 4 -type f | head -80
+
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -23,16 +27,18 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK packages
+      - name: Install SDK packages
         run: sdkmanager "platforms;android-35" "build-tools;36.0.0"
 
       - name: Build APK
         run: |
-          chmod +x ./gradlew
+          find project -type f -name gradlew -print
+          cd "$(dirname "$(find project -type f -name gradlew | head -1)")"
+          chmod +x gradlew
           ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: KotostBypass-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: project/**/build/outputs/apk/debug/*.apk
